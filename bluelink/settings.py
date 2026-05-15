@@ -40,11 +40,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bluelink.wsgi.application'
 
+import dj_database_url
+
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL',
-            'postgresql://postgres:admin1234@127.0.0.1:5432/bluelink_users'
-        )
+        default='postgresql://postgres:admin1234@127.0.0.1:5432/bluelink_users',
+        conn_max_age=600,
     )
 }
 
