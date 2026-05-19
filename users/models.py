@@ -4,9 +4,8 @@ from datetime import timedelta
 
 
 class AdminUser(models.Model):
-    """Separate admin table with limited fields"""
-    username = models.CharField(max_length=150, unique=True)
-    password = models.CharField(max_length=255)  # stored as hashed
+    username   = models.CharField(max_length=150, unique=True)
+    password   = models.CharField(max_length=255)
     last_login = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -17,16 +16,24 @@ class AdminUser(models.Model):
 
 
 class User(models.Model):
-    """Main user table"""
-    username = models.CharField(max_length=150, unique=True)
-    password = models.CharField(max_length=255)  # stored as hashed
-    place = models.CharField(max_length=255)
-    branch = models.CharField(max_length=255, blank=True, null=True)
-    phone_no = models.CharField(max_length=20)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    username              = models.CharField(max_length=150, unique=True)
+    password              = models.CharField(max_length=255)
+    place                 = models.CharField(max_length=255)
+    branch                = models.CharField(max_length=255, blank=True, null=True)
+    phone_no              = models.CharField(max_length=20)
+    is_active             = models.BooleanField(default=True)
+    created_at            = models.DateTimeField(auto_now_add=True)
     admin_override_active = models.BooleanField(default=False)
-    admin_override_at = models.DateTimeField(null=True, blank=True)
+    admin_override_at     = models.DateTimeField(null=True, blank=True)
+
+    # ── Device binding — one user one device ─────────────────────
+    device_id = models.CharField(
+        max_length=256,
+        blank=True,
+        null=True,
+        default=None,
+        help_text="Bound device ID — set on first login, locked after that"
+    )
 
     class Meta:
         db_table = 'bluelink_users'
@@ -36,35 +43,30 @@ class User(models.Model):
 
     @property
     def effective_is_active(self):
-        """
-        Logic:
-        - After 30 days from created_at -> inactive (base rule)
-        - If admin overrides to active -> active, but only until 30 days from override
-        - After that 30-day window from override -> inactive again
-        """
         now = timezone.now()
         days_since_created = (now - self.created_at).days
 
         if self.admin_override_active and self.admin_override_at:
             days_since_override = (now - self.admin_override_at).days
             if days_since_override < 30:
-                return True  # admin gave a fresh 30-day window
+                return True
             else:
-                return False  # override window expired
+                return False
         else:
             if days_since_created >= 30:
-                return False  # original 30-day rule
+                return False
             return self.is_active
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'username': self.username,
-            'place': self.place,
-            'branch': self.branch,
-            'phone_no': self.phone_no,
-            'is_active': self.effective_is_active,
-            'created_at': self.created_at.isoformat(),
-            'admin_override_active': self.admin_override_active,
-            'admin_override_at': self.admin_override_at.isoformat() if self.admin_override_at else None,
+            'id':                   self.id,
+            'username':             self.username,
+            'place':                self.place,
+            'branch':               self.branch,
+            'phone_no':             self.phone_no,
+            'is_active':            self.effective_is_active,
+            'created_at':           self.created_at.isoformat(),
+            'admin_override_active':self.admin_override_active,
+            'admin_override_at':    self.admin_override_at.isoformat() if self.admin_override_at else None,
+            'device_bound':         bool(self.device_id),  # admin can see if device is bound
         }
