@@ -17,4 +17,6 @@ urlpatterns = [
     path('users/<int:user_id>/delete/', views.delete_user, name='delete_user'),
     path('users/<int:user_id>/status/', views.toggle_user_status, name='toggle_user_status'),
     path('users/<int:user_id>/change-password/', views.change_password, name='change_password'),
+     # NEW — reset device binding so user can login from a different phone
+    path('users/<int:user_id>/reset-device/', views.reset_device, name='reset_device'),
 ]
