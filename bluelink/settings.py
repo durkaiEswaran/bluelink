@@ -44,8 +44,13 @@ import dj_database_url
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgresql://postgres:admin1234@127.0.0.1:5432/bluelink_users',
+        default=os.environ.get(
+            'DATABASE_URL',
+            'postgresql://postgres:admin1234@127.0.0.1:5432/bluelink_users'
+        ),
         conn_max_age=600,
+        # Internal Render URL: keep False. EXTERNAL url: set DB_SSL_REQUIRE=True.
+        ssl_require=os.environ.get('DB_SSL_REQUIRE', 'False') == 'True',
     )
 }
 
